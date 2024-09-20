@@ -31,8 +31,6 @@ def execute_shell_command(command):
     try:
         # Print the command that will be executed
         print_colored(f"\nExecuting command: {command}", 'GREEN')
-        print_colored("Starting execution...", 'GREEN')
-
         # Check if the command is a cd command
         if command.strip().startswith('cd'):
             # Extract the directory path
@@ -47,7 +45,6 @@ def execute_shell_command(command):
             except PermissionError:
                 print_colored(f"Permission denied: {new_dir}", 'RED')
                 return f"Error: Permission denied: {new_dir}"
-
         # Check if the command is an interactive program
         interactive_programs = ['nano', 'vim', 'emacs', 'less', 'more']
         command_parts = command.split()
@@ -68,8 +65,6 @@ def execute_shell_command(command):
 
         # Get the output
         stdout, stderr = process.communicate()
-
-        print_colored("\nExecution completed.", 'GREEN')
 
         if process.returncode == 0:
             return stdout
@@ -160,7 +155,7 @@ def main():
                 output = execute_shell_command(command_to_execute)
 
                 # Print the output
-                print_colored("\nCommand result:", 'GREEN')
+                #print_colored("\nCommand result:", 'GREEN')
                 print(output)  # This will be printed in the default color
 
                 # Add assistant's response and command output to conversation history if --keep is enabled
@@ -168,8 +163,8 @@ def main():
                     conversation_history.append({"role": "assistant", "content": f"Executed command: {command_to_execute}\nOutput: {output}"})
             else:
                 # If no function call was made, print the OpenAI response
-                print_colored("\nNo command to execute was generated.", 'YELLOW')
-                print_colored("OpenAI response:", 'CYAN')
+                #print_colored("\nNo command to execute was generated.", 'YELLOW')
+                print_colored("OpenAI response:", 'YELLOW')
                 if 'choices' in response and 'content' in response['choices'][0]['message']:
                     assistant_response = response['choices'][0]['message']['content']
                     print_colored(assistant_response, 'LIGHT_CYAN')  # Print OpenAI's text response in light cyan and bold
