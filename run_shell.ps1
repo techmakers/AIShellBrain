@@ -40,4 +40,4 @@ foreach ($dep in $dependencies) {
 
 # Esegui lo script Python
 Write-Host "Avvio di shellbrain.py..." -ForegroundColor Green
-python shellbrain.py --keep
+python shellbrain.py 

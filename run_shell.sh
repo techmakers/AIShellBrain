@@ -46,4 +46,4 @@ done
 
 # Run the Python script
 echo -e "${GREEN}Starting shellbrain.py...${NC}"
-python3 shellbrain.py --keep -y
+python3 shellbrain.py -y
