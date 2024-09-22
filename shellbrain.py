@@ -117,13 +117,19 @@ def main():
     # Initialize OpenAI API with the API key
     openai.api_key = api_key
 
+    # Identify the operating system
+    operating_system = platform.system()
+
     # Create a PromptSession with FileHistory
     session = PromptSession(history=FileHistory('.command_history'))
 
-    # Initialize conversation history
-    conversation_history = []
+    # Initialize conversation history with OS details
+    conversation_history = [
+        {"role": "system", "content": f"You are a helpful assistant that can execute shell commands and provide information. The operating system is {operating_system}."}
+    ]
+    
     if args.keep:
-        conversation_history.append({"role": "system", "content": "You are a helpful assistant that can execute shell commands and provide information."})
+        conversation_history.append({"role": "system", "content": "You will retain conversation context across interactions."})
 
     while True:
         try:
