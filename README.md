@@ -5,7 +5,7 @@ This Python script provides an AI-powered interactive shell that integrates with
 ## Features
 
 - Execute shell commands using natural language input
-- Maintain conversation context across multiple interactions
+- Maintain conversation context across multiple interactions unless specified otherwise
 - Change directories and persist the change for subsequent commands
 - Confirm command execution for added safety
 - Colorized output for better readability
@@ -48,23 +48,28 @@ python ai_shellbrain.py [options]
 
 ### Command-line Options
 
-- `--keep`: Maintain conversation context across multiple interactions
+- `--forget`: Do not maintain conversation context across multiple interactions
 - `-y`: Execute commands without confirmation
 - `--api-key KEY`: Specify the OpenAI API key (alternative to environment variable)
 
 ### Examples
 
-1. Run with conversation context and command confirmation:
+1. Run maintaining conversation context with command confirmation:
    ```
-   python ai_shellbrain.py --keep
+   python ai_shellbrain.py
    ```
 
-2. Run without command confirmation:
+2. Run without conversation context and with command confirmation:
+   ```
+   python ai_shellbrain.py --forget
+   ```
+
+3. Run without command confirmation:
    ```
    python ai_shellbrain.py -y
    ```
 
-3. Specify API key via command line:
+4. Specify API key via command line:
    ```
    python ai_shellbrain.py --api-key YOUR_API_KEY
    ```
@@ -90,4 +95,3 @@ Contributions, issues, and feature requests are welcome. Feel free to check [iss
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
-

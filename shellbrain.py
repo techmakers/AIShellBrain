@@ -103,7 +103,7 @@ def execute_shell_command(command):
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Interactive shell with OpenAI integration")
-    parser.add_argument("--keep", action="store_true", help="Keep conversation context")
+    parser.add_argument("--forget", action="store_true", help="Forget conversation context after each interaction")
     parser.add_argument("-y", action="store_true", help="Execute commands without confirmation")
     parser.add_argument("--api-key", help="OpenAI API key")
     args = parser.parse_args()
@@ -128,7 +128,7 @@ def main():
         {"role": "system", "content": f"You are a helpful assistant that can execute shell commands and provide information. The operating system is {operating_system}."}
     ]
     
-    if args.keep:
+    if not args.forget:
         conversation_history.append({"role": "system", "content": "You will retain conversation context across interactions."})
 
     while True:
@@ -139,12 +139,12 @@ def main():
             if user_input.lower() == 'exit':
                 break
 
-            # Add user input to conversation history if --keep is enabled
-            if args.keep:
+            # Add user input to conversation history if --forget is not enabled
+            if not args.forget:
                 conversation_history.append({"role": "user", "content": user_input})
 
             # Prepare messages for OpenAI API
-            messages = conversation_history if args.keep else [{"role": "user", "content": user_input}]
+            messages = conversation_history if not args.forget else [{"role": "user", "content": user_input}]
 
             # Call OpenAI API to get the shell command
             response = openai.ChatCompletion.create(
@@ -205,10 +205,10 @@ def main():
                     output = execute_shell_command(command_to_execute)
 
                 # Print the output
-                print(output)
+                #print(output)
 
-                # Add assistant's response and command output to conversation history if --keep is enabled
-                if args.keep:
+                # Add assistant's response and command output to conversation history if --forget is not enabled
+                if not args.forget:
                     conversation_history.append({"role": "assistant", "content": f"Executed command: {command_to_execute}\nOutput: {output}"})
             else:
                 # If no function call was made, print the OpenAI response
@@ -216,7 +216,7 @@ def main():
                 if 'choices' in response and 'content' in response['choices'][0]['message']:
                     assistant_response = response['choices'][0]['message']['content']
                     print_colored(assistant_response, 'LIGHT_CYAN')
-                    if args.keep:
+                    if not args.forget:
                         conversation_history.append({"role": "assistant", "content": assistant_response})
                 else:
                     print_colored("No text response available.", 'RED')
