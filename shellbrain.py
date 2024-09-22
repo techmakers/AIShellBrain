@@ -137,7 +137,7 @@ def main():
             user_input = session.prompt(f"\n{os.getcwd()}> ")
             if user_input == "":
                 if executed_command:
-                    user_input = "describe the result of the last command"
+                    user_input = "describe the result using the language I used previously"
                 else:
                     continue
 
