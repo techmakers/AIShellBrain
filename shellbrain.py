@@ -7,6 +7,9 @@ import os
 import argparse
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
+import shlex
+import platform
+import shutil
 
 # ANSI color codes
 COLORS = {
@@ -16,7 +19,7 @@ COLORS = {
     'BLUE': '\033[94m',
     'MAGENTA': '\033[95m',
     'CYAN': '\033[96m',
-    'LIGHT_CYAN': '\033[96;1m',  # Light Cyan and Bold
+    'LIGHT_CYAN': '\033[96;1m',
     'WHITE': '\033[97m',
     'RESET': '\033[0m'
 }
@@ -26,11 +29,20 @@ def print_colored(text, color='WHITE'):
     color_code = COLORS.get(color.upper(), COLORS['WHITE'])
     print(f"{color_code}{text}{COLORS['RESET']}")
 
+# Function to execute interactive programs
+def interactive_programs(command):
+    # Print message about interactive program execution
+    print_colored("Interactive program detected. Launching...", 'YELLOW')
+    os.system(command)
+    print_colored("Interactive program closed. Returning to script.", 'YELLOW')
+    return "Interactive program execution completed."
+
 # Function to execute a shell command and return its output
 def execute_shell_command(command):
     try:
         # Print the command that will be executed
         print_colored(f"\nExecuting command: {command}", 'GREEN')
+        
         # Check if the command is a cd command
         if command.strip().startswith('cd'):
             # Extract the directory path
@@ -45,31 +57,46 @@ def execute_shell_command(command):
             except PermissionError:
                 print_colored(f"Permission denied: {new_dir}", 'RED')
                 return f"Error: Permission denied: {new_dir}"
+        
         # Check if the command is an interactive program
-        interactive_programs = ['nano', 'vim', 'emacs', 'less', 'more']
+        interactive_programs_list = ['nano', 'vim', 'emacs', 'less', 'more']
         command_parts = command.split()
-        if command_parts and command_parts[0] in interactive_programs:
-            print_colored("Interactive program detected. Launching...", 'YELLOW')
-            os.system(command)
-            print_colored("Interactive program closed. Returning to script.", 'YELLOW')
-            return "Interactive program execution completed."
+        if command_parts and command_parts[0] in interactive_programs_list:
+            print_colored("Interactive program detected (force). Launching...", 'YELLOW')
+            return interactive_programs(command)
 
-        # For non-interactive commands, use subprocess
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        # For non-interactive commands, use subprocess with real-time output
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, universal_newlines=True)
 
-        # Print dots while the command is running
-        while process.poll() is None:
-            sys.stdout.write(f"{COLORS['GREEN']}.{COLORS['RESET']}")
-            sys.stdout.flush()
-            time.sleep(0.5)
+        output = []
+        # Loop to read both stdout and stderr
+        while True:
+            stdout_line = process.stdout.readline()
+            stderr_line = process.stderr.readline()
+            
+            if not stdout_line and not stderr_line and process.poll() is not None:
+                break
+            
+            if stdout_line:
+                print(stdout_line.strip())
+                output.append(stdout_line.strip())
+            if stderr_line:
+                print_colored(stderr_line.strip(), 'RED')
+                output.append(stderr_line.strip())
 
-        # Get the output
-        stdout, stderr = process.communicate()
+        # Ensure all remaining output is captured
+        remaining_stdout, remaining_stderr = process.communicate()
+        if remaining_stdout:
+            print(remaining_stdout.strip())
+            output.append(remaining_stdout.strip())
+        if remaining_stderr:
+            print_colored(remaining_stderr.strip(), 'RED')
+            output.append(remaining_stderr.strip())
 
         if process.returncode == 0:
-            return stdout
+            return "\n".join(output)
         else:
-            return f"Error: {stderr}"
+            return f"Error: Command exited with status {process.returncode}\n" + "\n".join(output)
     except Exception as e:
         return f"Error in execution: {str(e)}"
 
@@ -131,6 +158,20 @@ def main():
                             },
                             "required": ["command"]
                         }
+                    },
+                    {
+                        "name": "interactive_programs",
+                        "description": "Execute an interactive program",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "command": {
+                                    "type": "string",
+                                    "description": "The interactive program command to execute"
+                                }
+                            },
+                            "required": ["command"]
+                        }
                     }
                 ],
                 function_call="auto"
@@ -151,24 +192,24 @@ def main():
                         print_colored("Command execution cancelled.", 'YELLOW')
                         continue
 
-                # Execute the command and get the output
-                output = execute_shell_command(command_to_execute)
+                # Determine the appropriate function to call
+                if function_call['name'] == 'interactive_programs':
+                    output = interactive_programs(command_to_execute)
+                else:
+                    output = execute_shell_command(command_to_execute)
 
                 # Print the output
-                #print_colored("\nCommand result:", 'GREEN')
-                print(output)  # This will be printed in the default color
+                print(output)
 
                 # Add assistant's response and command output to conversation history if --keep is enabled
                 if args.keep:
                     conversation_history.append({"role": "assistant", "content": f"Executed command: {command_to_execute}\nOutput: {output}"})
             else:
                 # If no function call was made, print the OpenAI response
-                #print_colored("\nNo command to execute was generated.", 'YELLOW')
                 print_colored("OpenAI response:", 'YELLOW')
                 if 'choices' in response and 'content' in response['choices'][0]['message']:
                     assistant_response = response['choices'][0]['message']['content']
-                    print_colored(assistant_response, 'LIGHT_CYAN')  # Print OpenAI's text response in light cyan and bold
-                    # Add assistant's response to conversation history if --keep is enabled
+                    print_colored(assistant_response, 'LIGHT_CYAN')
                     if args.keep:
                         conversation_history.append({"role": "assistant", "content": assistant_response})
                 else:
