@@ -130,11 +130,16 @@ def main():
 
     if not args.forget:
         conversation_history.append({"role": "system", "content": "You will retain conversation context across interactions."})
-
+    executed_command = False
     while True:
         try:
             # Use prompt_toolkit to get user input with history
             user_input = session.prompt(f"\n{os.getcwd()}> ")
+            if user_input == "":
+                if executed_command:
+                    user_input = "describe the result of the last command"
+                else:
+                    continue
 
             if user_input.lower() == 'exit':
                 break
@@ -206,10 +211,12 @@ def main():
 
                 # Determine the appropriate function to call
                 if function_call.name == 'interactive_programs':
+                    executed_command = False
                     output = interactive_programs(command_to_execute)
                 else:
+                    executed_command = True
                     output = execute_shell_command(command_to_execute)
-
+    
                 # Print the output
                 #print(output)
 
@@ -217,6 +224,7 @@ def main():
                 if not args.forget:
                     conversation_history.append({"role": "assistant", "content": f"Executed command: {command_to_execute}\nOutput: {output}"})
             else:
+                executed_command = False
                 # If no function call was made, print the OpenAI response
                 # response.choices[0].message.content
                 print_colored("OpenAI response:", 'YELLOW')
