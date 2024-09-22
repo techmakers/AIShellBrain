@@ -4,13 +4,13 @@ This Python script provides an AI-powered interactive shell that integrates with
 
 ## Features
 
-- Execute shell commands using natural language input
-- Maintain conversation context across multiple interactions unless specified otherwise
-- Change directories and persist the change for subsequent commands
-- Confirm command execution for added safety
-- Colorized output for better readability
-- Command history support
-- OpenAI API key management via command line or environment variable
+- Execute shell commands using natural language input.
+- Maintain conversation context across multiple interactions unless specified otherwise.
+- Change directories and persist the change for subsequent commands.
+- Confirm command execution for added safety.
+- Colorized output for better readability.
+- Command history support.
+- OpenAI API key management via command line or environment variable.
 
 ## Requirements
 
@@ -48,9 +48,9 @@ python ai_shellbrain.py [options]
 
 ### Command-line Options
 
-- `--forget`: Do not maintain conversation context across multiple interactions
-- `-y`: Execute commands without confirmation
-- `--api-key KEY`: Specify the OpenAI API key (alternative to environment variable)
+- `--forget`: Do not maintain conversation context across multiple interactions.
+- `--yy`: Execute commands without confirmation.
+- `--api-key KEY`: Specify the OpenAI API key (alternative to environment variable).
 
 ### Examples
 
@@ -66,7 +66,7 @@ python ai_shellbrain.py [options]
 
 3. Run without command confirmation:
    ```
-   python ai_shellbrain.py -y
+   python ai_shellbrain.py --yy
    ```
 
 4. Specify API key via command line:
@@ -78,7 +78,7 @@ python ai_shellbrain.py [options]
 
 1. The script prompts for user input.
 2. The input is sent to OpenAI's API to generate a shell command or provide information.
-3. If a command is generated, the user is asked for confirmation (unless `-y` is used).
+3. If a command is generated, the user is asked for confirmation (unless `--yy` is used).
 4. The command is executed, and the output is displayed.
 5. The process repeats until the user exits.
 
@@ -86,11 +86,11 @@ python ai_shellbrain.py [options]
 
 - The script runs commands with the same permissions as the user running the script.
 - Always review commands before confirming execution.
-- Use the `-y` option with caution, as it bypasses command confirmation.
+- Use the `--yy` option with caution, as it bypasses command confirmation.
 
 ## Contributing
 
-Contributions, issues, and feature requests are welcome. Feel free to check [issues page](https://github.com/yourusername/ai-powered-shell/issues) if you want to contribute.
+Contributions, issues, and feature requests are welcome. Feel free to check the [issues page](https://github.com/yourusername/ai-powered-shell/issues) if you want to contribute.
 
 ## License
 

@@ -1,15 +1,12 @@
-import openai
+from openai import OpenAI
 import subprocess
 import json
-import time
 import sys
 import os
 import argparse
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
-import shlex
 import platform
-import shutil
 
 # ANSI color codes
 COLORS = {
@@ -23,6 +20,9 @@ COLORS = {
     'WHITE': '\033[97m',
     'RESET': '\033[0m'
 }
+
+# List of potentially dangerous commands
+dangerous_commands = ['rm', 'rmdir', 'del', 'erase', 'rd']
 
 # Function to print colored text
 def print_colored(text, color='WHITE'):
@@ -42,7 +42,7 @@ def execute_shell_command(command):
     try:
         # Print the command that will be executed
         print_colored(f"\nExecuting command: {command}", 'GREEN')
-        
+
         # Check if the command is a cd command
         if command.strip().startswith('cd'):
             # Extract the directory path
@@ -57,9 +57,9 @@ def execute_shell_command(command):
             except PermissionError:
                 print_colored(f"Permission denied: {new_dir}", 'RED')
                 return f"Error: Permission denied: {new_dir}"
-        
+
         # Check if the command is an interactive program
-        interactive_programs_list = ['nano', 'vim', 'emacs', 'less', 'more']
+        interactive_programs_list = ['nano', 'vim', 'emacs', 'less', 'more','vi']
         command_parts = command.split()
         if command_parts and command_parts[0] in interactive_programs_list:
             print_colored("Interactive program detected (force). Launching...", 'YELLOW')
@@ -73,10 +73,10 @@ def execute_shell_command(command):
         while True:
             stdout_line = process.stdout.readline()
             stderr_line = process.stderr.readline()
-            
+
             if not stdout_line and not stderr_line and process.poll() is not None:
                 break
-            
+
             if stdout_line:
                 print(stdout_line.strip())
                 output.append(stdout_line.strip())
@@ -105,6 +105,7 @@ def main():
     parser = argparse.ArgumentParser(description="Interactive shell with OpenAI integration")
     parser.add_argument("--forget", action="store_true", help="Forget conversation context after each interaction")
     parser.add_argument("-y", action="store_true", help="Execute commands without confirmation")
+    parser.add_argument("--yy", action="store_true", help="Execute even dangerous commands without confirmation")
     parser.add_argument("--api-key", help="OpenAI API key")
     args = parser.parse_args()
 
@@ -113,9 +114,8 @@ def main():
     if not api_key:
         print_colored("Error: OpenAI API key not provided. Please use --api-key or set the OPENAI_API_KEY environment variable.", 'RED')
         sys.exit(1)
-
-    # Initialize OpenAI API with the API key
-    openai.api_key = api_key
+    
+    client = OpenAI(api_key=api_key)
 
     # Identify the operating system
     operating_system = platform.system()
@@ -127,7 +127,7 @@ def main():
     conversation_history = [
         {"role": "system", "content": f"You are a helpful assistant that can execute shell commands and provide information. The operating system is {operating_system}."}
     ]
-    
+
     if not args.forget:
         conversation_history.append({"role": "system", "content": "You will retain conversation context across interactions."})
 
@@ -147,59 +147,65 @@ def main():
             messages = conversation_history if not args.forget else [{"role": "user", "content": user_input}]
 
             # Call OpenAI API to get the shell command
-            response = openai.ChatCompletion.create(
-                model="gpt-4o-mini",
-                messages=messages,
-                functions=[
-                    {
-                        "name": "execute_shell_command",
-                        "description": "Execute a shell command and return the output",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "command": {
-                                    "type": "string",
-                                    "description": "The shell command to execute"
-                                }
-                            },
-                            "required": ["command"]
-                        }
-                    },
-                    {
-                        "name": "interactive_programs",
-                        "description": "Execute an interactive program",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "command": {
-                                    "type": "string",
-                                    "description": "The interactive program command to execute"
-                                }
-                            },
-                            "required": ["command"]
-                        }
+            response = client.chat.completions.create(model="gpt-4o-mini",
+            messages=messages,
+            functions=[
+                {
+                    "name": "execute_shell_command",
+                    "description": "Execute a shell command and return the output",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "command": {
+                                "type": "string",
+                                "description": "The shell command to execute"
+                            }
+                        },
+                        "required": ["command"]
                     }
-                ],
-                function_call="auto"
-            )
-
+                },
+                {
+                    "name": "interactive_programs",
+                    "description": "Execute an interactive program",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "command": {
+                                "type": "string",
+                                "description": "The interactive program command to execute"
+                            }
+                        },
+                        "required": ["command"]
+                    }
+                }
+            ],
+            function_call="auto")
             # Check if a function call was made in the response
-            if 'choices' in response and 'function_call' in response['choices'][0]['message']:
-                function_call = response['choices'][0]['message']['function_call']
-                
+            if hasattr(response, 'choices') and len(response.choices) > 0 and hasattr(response.choices[0].message, 'function_call') and response.choices[0].message.function_call is not None:
+                function_call = response.choices[0].message.function_call
                 # Parse the JSON string to a dictionary
-                arguments = json.loads(function_call['arguments'])
+                arguments = json.loads(function_call.arguments)
                 command_to_execute = arguments['command']
                 
+                # Check for dangerous commands
+                is_dangerous = any(command_to_execute.strip().startswith(cmd) for cmd in dangerous_commands)
+                
+                # Ask for confirmation for dangerous commands unless --yy is set
+                if is_dangerous and not args.yy:
+                    confirmation = input(f"Warning: The command '{command_to_execute}' is potentially dangerous. Do you want to execute it? (y/n): ")
+                    if confirmation.lower() != 'y':
+                        print_colored("Command execution cancelled.", 'YELLOW')
+                        continue
+                
                 # Ask for confirmation if -y flag is not set
-                if not args.y:
+                if not args.y and not is_dangerous:
                     confirmation = input(f"Do you want to execute the command: '{command_to_execute}'? (y/n): ")
                     if confirmation.lower() != 'y':
                         print_colored("Command execution cancelled.", 'YELLOW')
                         continue
 
                 # Determine the appropriate function to call
-                if function_call['name'] == 'interactive_programs':
+                if function_call.name == 'interactive_programs':
                     output = interactive_programs(command_to_execute)
                 else:
                     output = execute_shell_command(command_to_execute)
@@ -212,9 +218,10 @@ def main():
                     conversation_history.append({"role": "assistant", "content": f"Executed command: {command_to_execute}\nOutput: {output}"})
             else:
                 # If no function call was made, print the OpenAI response
+                # response.choices[0].message.content
                 print_colored("OpenAI response:", 'YELLOW')
-                if 'choices' in response and 'content' in response['choices'][0]['message']:
-                    assistant_response = response['choices'][0]['message']['content']
+                if hasattr(response, 'choices') and len(response.choices) > 0 and hasattr(response.choices[0].message, 'content'):
+                    assistant_response = response.choices[0].message.content
                     print_colored(assistant_response, 'LIGHT_CYAN')
                     if not args.forget:
                         conversation_history.append({"role": "assistant", "content": assistant_response})
