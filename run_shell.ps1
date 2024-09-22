@@ -39,5 +39,5 @@ foreach ($dep in $dependencies) {
 }
 
 # Esegui lo script Python
-Write-Host "Avvio di shell.py..." -ForegroundColor Green
-python shell.py --keep
+Write-Host "Avvio di shellbrain.py..." -ForegroundColor Green
+python shellbrain.py --keep

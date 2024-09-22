@@ -43,7 +43,7 @@ This Python script provides an AI-powered interactive shell that integrates with
 Run the script with:
 
 ```
-python ai_shell.py [options]
+python ai_shellbrain.py [options]
 ```
 
 ### Command-line Options
@@ -56,17 +56,17 @@ python ai_shell.py [options]
 
 1. Run with conversation context and command confirmation:
    ```
-   python ai_shell.py --keep
+   python ai_shellbrain.py --keep
    ```
 
 2. Run without command confirmation:
    ```
-   python ai_shell.py -y
+   python ai_shellbrain.py -y
    ```
 
 3. Specify API key via command line:
    ```
-   python ai_shell.py --api-key YOUR_API_KEY
+   python ai_shellbrain.py --api-key YOUR_API_KEY
    ```
 
 ## How It Works
