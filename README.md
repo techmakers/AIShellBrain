@@ -12,6 +12,7 @@ This Python script provides an AI-powered interactive shell that integrates with
 - Command history support.
 - OpenAI API key management via command line or environment variable.
 - Option to specify a different GPT model.
+- Explanation of the last output by pressing the enter key
 
 ## Requirements
 
