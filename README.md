@@ -23,8 +23,8 @@ This Python script provides an AI-powered interactive shell that integrates with
 
 1. Clone this repository:
    ```
-   git clone https://github.com/techmakers/ShellBrain.git
-   cd ShellBrain
+   git clone https://github.com/techmakers/AIShellBrain.git
+   cd AIShellBrain
    ```
 
 2. Install the required packages:
@@ -50,6 +50,7 @@ python ai_shellbrain.py [options]
 ### Command-line Options
 
 - `--forget`: Do not maintain conversation context across multiple interactions.
+- `--y`: executes commands without confirmation except for "rm", "del" etc
 - `--yy`: Execute commands without confirmation.
 - `--api-key KEY`: Specify the OpenAI API key (alternative to environment variable).
 - `--model MODEL_NAME`: Force the use of a different GPT model instead of the default "gpt-4o-mini".
@@ -97,7 +98,7 @@ python ai_shellbrain.py [options]
 
 ## Contributing
 
-Contributions, issues, and feature requests are welcome. Feel free to check the [issues page](https://github.com/techmakers/ShellBrain/issues) if you want to contribute.
+Contributions, issues, and feature requests are welcome. Feel free to check the [issues page](https://github.com/techmakers/AIShellBrain/issues) if you want to contribute.
 
 ## License
 
