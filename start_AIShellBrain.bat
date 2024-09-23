@@ -39,5 +39,5 @@ for %%d in (%dependencies%) do (
 )
 
 :: Run the Python script
-echo Starting shellbrain.py...
-python shellbrain.py -y
+echo Starting AIShellBrain.py...
+python AIShellBrain.py -y

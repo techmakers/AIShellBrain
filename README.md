@@ -45,7 +45,7 @@ This Python script provides an AI-powered interactive shell that integrates with
 Run the script with:
 
 ```
-python ai_shellbrain.py [options]
+python AIShellBrain.py [options]
 ```
 
 ### Command-line Options
@@ -60,27 +60,27 @@ python ai_shellbrain.py [options]
 
 1. Run maintaining conversation context with command confirmation:
    ```
-   python shellbrain.py
+   python AIShellBrain.py
    ```
 
 2. Run without conversation context and with command confirmation:
    ```
-   python shellbrain.py --forget
+   python AIShellBrain.py --forget
    ```
 
 3. Run without command confirmation:
    ```
-   python shellbrain.py --y
+   python AIShellBrain.py --y
    ```
 
 4. Specify API key via command line:
    ```
-   python shellbrain.py --api-key YOUR_API_KEY
+   python AIShellBrain.py --api-key YOUR_API_KEY
    ```
 
 5. Use a different GPT model:
    ```
-   python shellbrain.py --model gpt-3.5-turbo
+   python AIShellBrain.py --model gpt-3.5-turbo
    ```
 
 ## How It Works

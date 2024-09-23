@@ -45,5 +45,5 @@ do
 done
 
 # Run the Python script
-echo -e "${GREEN}Starting shellbrain.py...${NC}"
-python3 shellbrain.py -y
+echo -e "${GREEN}Starting AIShellBrain.py...${NC}"
+python3 AIShellBrain.py
