@@ -29,13 +29,52 @@ def print_colored(text, color='WHITE'):
     color_code = COLORS.get(color.upper(), COLORS['WHITE'])
     print(f"{color_code}{text}{COLORS['RESET']}")
 
+def markdown_to_ansi(markdown_text):
+    # Simple translation from markdown to ANSI codes
+    import re
+    
+    # Regular expression patterns for markdown
+    bold_pattern = r'\*\*(.*?)\*\*'  # Matches **bold**
+    italic_pattern = r'\*(.*?)\*'    # Matches *italic*
+    header_pattern = r'^(#+) (.*)'   # Matches headers like # Header
+
+    # ANSI escape sequences
+    ansi_bold = '\033[1m'
+    ansi_italic = '\033[3m'
+    ansi_reset = '\033[0m'
+
+    # Function to convert headers
+    def convert_header(match):
+        header_level = len(match.group(1))
+        header_text = match.group(2)
+        # Convert header level to bold
+        return f"{ansi_bold}{header_text}{ansi_reset}\n"
+
+    # Convert markdown to ANSI
+    ansi_text = markdown_text
+
+    # Replace markdown headers with ANSI
+    ansi_text = re.sub(header_pattern, convert_header, ansi_text, flags=re.MULTILINE)
+
+    # Replace markdown bold with ANSI
+    ansi_text = re.sub(bold_pattern, lambda m: f"{ansi_bold}{m.group(1)}{ansi_reset}", ansi_text)
+
+    # Replace markdown italic with ANSI
+    ansi_text = re.sub(italic_pattern, lambda m: f"{ansi_italic}{m.group(1)}{ansi_reset}", ansi_text)
+
+    return ansi_text
+
 # Function to execute interactive programs
 def interactive_programs(command):
     # Print message about interactive program execution
     print_colored("Interactive program detected. Launching...", 'YELLOW')
-    os.system(command)
+    #result = os.system(command)
+    result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     print_colored("Interactive program closed. Returning to script.", 'YELLOW')
-    return "Interactive program execution completed."
+    ret = ""
+    if result.stdout != "" or result.stderr != "" :
+        ret = f"stdout:{result.stdout} stderr:{result.stderr}"
+    return ret
 
 # Function to execute a shell command and return its output
 def execute_shell_command(command):
@@ -137,7 +176,7 @@ def main():
             user_input = session.prompt(f"\n{os.getcwd()}> ")
             if user_input == "":
                 if executed_command:
-                    user_input = "describe the result using the language I used previously"
+                    user_input = "Describe the result using the language I used previously"
                 else:
                     continue
 
@@ -209,14 +248,14 @@ def main():
                         print_colored("Command execution cancelled.", 'YELLOW')
                         continue
 
+                executed_command = False
                 # Determine the appropriate function to call
                 if function_call.name == 'interactive_programs':
-                    executed_command = False
                     output = interactive_programs(command_to_execute)
                 else:
-                    executed_command = True
                     output = execute_shell_command(command_to_execute)
-    
+                if output :
+                    executed_command = True
                 # Print the output
                 #print(output)
 
@@ -227,10 +266,10 @@ def main():
                 executed_command = False
                 # If no function call was made, print the OpenAI response
                 # response.choices[0].message.content
-                print_colored("OpenAI response:", 'YELLOW')
+                print_colored("OpenAI response:", 'LIGHT_CYAN')
                 if hasattr(response, 'choices') and len(response.choices) > 0 and hasattr(response.choices[0].message, 'content'):
                     assistant_response = response.choices[0].message.content
-                    print_colored(assistant_response, 'LIGHT_CYAN')
+                    print(markdown_to_ansi(assistant_response))
                     if not args.forget:
                         conversation_history.append({"role": "assistant", "content": assistant_response})
                 else:
