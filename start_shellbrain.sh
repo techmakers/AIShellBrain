@@ -32,7 +32,7 @@ then
 fi
 
 # List of pip dependencies
-dependencies=("openai" "prompt_toolkit" "platform" "argparse")
+dependencies=("openai" "prompt_toolkit" "argparse")
 
 # Check and install pip dependencies
 for dep in "${dependencies[@]}"
