@@ -72,13 +72,16 @@ def markdown_to_ansi(markdown_text):
 def interactive_programs(command):
     # Print message about interactive program execution
     print_colored("Interactive program detected. Launching...", 'YELLOW')
-    #result = os.system(command)
-    result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    print_colored("Interactive program closed. Returning to script.", 'YELLOW')
-    ret = ""
-    if result.stdout != "" or result.stderr != "" :
-        ret = f"stdout:{result.stdout} stderr:{result.stderr}"
-    return ret
+    if True :
+        os.system(command)
+        return False
+    else :
+        result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        print_colored("Interactive program closed. Returning to script.", 'YELLOW')
+        ret = ""
+        if result.stdout != "" or result.stderr != "" :
+            ret = f"stdout:{result.stdout} stderr:{result.stderr}"
+        return ret
 
 # Function to execute a shell command and return its output
 def execute_shell_command(command):
@@ -102,7 +105,7 @@ def execute_shell_command(command):
                 return f"Error: Permission denied: {new_dir}"
 
         # Check if the command is an interactive program
-        interactive_programs_list = ['nano', 'vim', 'emacs', 'less', 'more','vi']
+        interactive_programs_list = ['nano', 'vim', 'emacs', 'less', 'more','vi','htop']
         command_parts = command.split()
         if command_parts and command_parts[0] in interactive_programs_list:
             print_colored("Interactive program detected (force). Launching...", 'YELLOW')

@@ -50,7 +50,7 @@ python ai_shellbrain.py [options]
 ### Command-line Options
 
 - `--forget`: Do not maintain conversation context across multiple interactions.
-- `--y`: executes commands without confirmation except for "rm", "del" etc
+- `--y`: Execute commands without confirmation except for "rm", "del" etc
 - `--yy`: Execute commands without confirmation.
 - `--api-key KEY`: Specify the OpenAI API key (alternative to environment variable).
 - `--model MODEL_NAME`: Force the use of a different GPT model instead of the default "gpt-4o-mini".
@@ -69,7 +69,7 @@ python ai_shellbrain.py [options]
 
 3. Run without command confirmation:
    ```
-   python ai_shellbrain.py --yy
+   python ai_shellbrain.py --y
    ```
 
 4. Specify API key via command line:
