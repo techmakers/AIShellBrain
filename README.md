@@ -60,27 +60,27 @@ python ai_shellbrain.py [options]
 
 1. Run maintaining conversation context with command confirmation:
    ```
-   python ai_shellbrain.py
+   python shellbrain.py
    ```
 
 2. Run without conversation context and with command confirmation:
    ```
-   python ai_shellbrain.py --forget
+   python shellbrain.py --forget
    ```
 
 3. Run without command confirmation:
    ```
-   python ai_shellbrain.py --y
+   python shellbrain.py --y
    ```
 
 4. Specify API key via command line:
    ```
-   python ai_shellbrain.py --api-key YOUR_API_KEY
+   python shellbrain.py --api-key YOUR_API_KEY
    ```
 
 5. Use a different GPT model:
    ```
-   python ai_shellbrain.py --model gpt-3.5-turbo
+   python shellbrain.py --model gpt-3.5-turbo
    ```
 
 ## How It Works
