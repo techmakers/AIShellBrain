@@ -11,6 +11,7 @@ This Python script provides an AI-powered interactive shell that integrates with
 - Colorized output for better readability.
 - Command history support.
 - OpenAI API key management via command line or environment variable.
+- Option to specify a different GPT model.
 
 ## Requirements
 
@@ -51,6 +52,7 @@ python ai_shellbrain.py [options]
 - `--forget`: Do not maintain conversation context across multiple interactions.
 - `--yy`: Execute commands without confirmation.
 - `--api-key KEY`: Specify the OpenAI API key (alternative to environment variable).
+- `--model MODEL_NAME`: Force the use of a different GPT model instead of the default "gpt-4o-mini".
 
 ### Examples
 
@@ -74,6 +76,11 @@ python ai_shellbrain.py [options]
    python ai_shellbrain.py --api-key YOUR_API_KEY
    ```
 
+5. Use a different GPT model:
+   ```
+   python ai_shellbrain.py --model gpt-3.5-turbo
+   ```
+
 ## How It Works
 
 1. The script prompts for user input.
@@ -95,3 +102,7 @@ Contributions, issues, and feature requests are welcome. Feel free to check the 
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
+
+## Author
+
+Alessandro Vernassa

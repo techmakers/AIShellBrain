@@ -1,3 +1,7 @@
+# This script was created by Alessandro Vernassa
+# It provides an interactive interface to communicate with an AI model
+# using the OpenAI API.
+
 from openai import OpenAI
 import subprocess
 import json
@@ -146,6 +150,7 @@ def main():
     parser.add_argument("-y", action="store_true", help="Execute commands without confirmation")
     parser.add_argument("--yy", action="store_true", help="Execute even dangerous commands without confirmation")
     parser.add_argument("--api-key", help="OpenAI API key")
+    parser.add_argument("--model", default="gpt-4o-mini", help="Specify a different OpenAI model to use (default: gpt-4o-mini)")
     args = parser.parse_args()
 
     # Get the OpenAI API key
@@ -191,39 +196,41 @@ def main():
             messages = conversation_history if not args.forget else [{"role": "user", "content": user_input}]
 
             # Call OpenAI API to get the shell command
-            response = client.chat.completions.create(model="gpt-4o-mini",
-            messages=messages,
-            functions=[
-                {
-                    "name": "execute_shell_command",
-                    "description": "Execute a shell command and return the output",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "command": {
-                                "type": "string",
-                                "description": "The shell command to execute"
-                            }
-                        },
-                        "required": ["command"]
+            response = client.chat.completions.create(
+                model=args.model,  # Use the model specified by the user
+                messages=messages,
+                functions=[
+                    {
+                        "name": "execute_shell_command",
+                        "description": "Execute a shell command and return the output",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "command": {
+                                    "type": "string",
+                                    "description": "The shell command to execute"
+                                }
+                            },
+                            "required": ["command"]
+                        }
+                    },
+                    {
+                        "name": "interactive_programs",
+                        "description": "Execute an interactive program",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "command": {
+                                    "type": "string",
+                                    "description": "The interactive program command to execute"
+                                }
+                            },
+                            "required": ["command"]
+                        }
                     }
-                },
-                {
-                    "name": "interactive_programs",
-                    "description": "Execute an interactive program",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "command": {
-                                "type": "string",
-                                "description": "The interactive program command to execute"
-                            }
-                        },
-                        "required": ["command"]
-                    }
-                }
-            ],
-            function_call="auto")
+                ],
+                function_call="auto"
+            )
             # Check if a function call was made in the response
             if hasattr(response, 'choices') and len(response.choices) > 0 and hasattr(response.choices[0].message, 'function_call') and response.choices[0].message.function_call is not None:
                 function_call = response.choices[0].message.function_call
