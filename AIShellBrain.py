@@ -226,7 +226,7 @@ def main():
 
             # Prepare messages for OpenAI API
             messages = conversation_history if not args.forget else [{"role": "user", "content": user_input}]
-            print(messages)
+            #print(messages)
             # Call OpenAI API to get the shell command
             response = client.chat.completions.create(
                 model=args.model,  # Use the model specified by the user
