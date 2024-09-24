@@ -16,14 +16,18 @@ import platform
 COLORS = {
     'RED': '\033[91m',
     'GREEN': '\033[92m',
+    'LIGHT_GREEN': '\033[92;1m',
     'YELLOW': '\033[93m',
+    'LIGHT_YELLOW': '\033[93;1m',
     'BLUE': '\033[94m',
     'MAGENTA': '\033[95m',
     'CYAN': '\033[96m',
     'LIGHT_CYAN': '\033[96;1m',
+    'LIGHT_WHITE': '\033[97;1m',
     'WHITE': '\033[97m',
     'RESET': '\033[0m'
 }
+conversation_history = []
 
 # List of potentially dangerous commands
 dangerous_commands = ['rm', 'rmdir', 'del', 'erase', 'rd']
@@ -71,80 +75,109 @@ def markdown_to_ansi(markdown_text):
 # Function to execute interactive programs
 def interactive_programs(command):
     # Print message about interactive program execution
-    print_colored("Interactive program detected. Launching...", 'YELLOW')
+    print_colored(f"Launching: {command}", 'LIGHT_YELLOW')
     if True :
         os.system(command)
         return False
     else :
-        result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,bufsize=-1)
         print_colored("Interactive program closed. Returning to script.", 'YELLOW')
         ret = ""
         if result.stdout != "" or result.stderr != "" :
             ret = f"stdout:{result.stdout} stderr:{result.stderr}"
         return ret
 
-# Function to execute a shell command and return its output
+
+import os
+import subprocess
+
+
+
 def execute_shell_command(command):
     try:
-        # Print the command that will be executed
-        print_colored(f"\nExecuting command: {command}", 'GREEN')
+        print_colored(f"Executing: {command}", 'LIGHT_GREEN')
 
-        # Check if the command is a cd command
-        if command.strip().startswith('cd'):
-            # Extract the directory path
-            new_dir = command.strip()[3:].strip()
-            try:
-                os.chdir(new_dir)
-                print_colored(f"Changed directory to: {os.getcwd()}", 'GREEN')
-                return f"Changed directory to: {os.getcwd()}"
-            except FileNotFoundError:
-                print_colored(f"Directory not found: {new_dir}", 'RED')
-                return f"Error: Directory not found: {new_dir}"
-            except PermissionError:
-                print_colored(f"Permission denied: {new_dir}", 'RED')
-                return f"Error: Permission denied: {new_dir}"
-
-        # Check if the command is an interactive program
-        interactive_programs_list = ['nano', 'vim', 'emacs', 'less', 'more','vi','htop']
-        command_parts = command.split()
-        if command_parts and command_parts[0] in interactive_programs_list:
-            print_colored("Interactive program detected (force). Launching...", 'YELLOW')
-            return interactive_programs(command)
-
-        # For non-interactive commands, use subprocess with real-time output
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, universal_newlines=True)
-
+        # Split the command by '&&' to handle multiple commands
+        command_parts = command.split('&&')
         output = []
-        # Loop to read both stdout and stderr
-        while True:
-            stdout_line = process.stdout.readline()
-            stderr_line = process.stderr.readline()
 
-            if not stdout_line and not stderr_line and process.poll() is not None:
-                break
+        for part in command_parts:
+            part = part.strip()  # Remove any leading/trailing whitespace
 
-            if stdout_line:
-                print(stdout_line.strip())
-                output.append(stdout_line.strip())
-            if stderr_line:
-                print_colored(stderr_line.strip(), 'RED')
-                output.append(stderr_line.strip())
+            if part.startswith('cd'):
+                # Handle 'cd' command separately
+                new_dir = part[3:].strip()
+                try:
+                    os.chdir(new_dir)
+                    print_colored(f"Changed directory to: {os.getcwd()}", 'GREEN')
+                    output.append(f"Changed directory to: {os.getcwd()}")
+                except FileNotFoundError:
+                    print_colored(f"Directory not found: {new_dir}", 'RED')
+                    output.append(f"Error: Directory not found: {new_dir}")
+                except PermissionError:
+                    print_colored(f"Permission denied: {new_dir}", 'RED')
+                    output.append(f"Error: Permission denied: {new_dir}")
+            else:
+                # Check if the command is an interactive program
+                interactive_programs_list = ['nano', 'vim', 'emacs', 'less', 'more','vi','htop']
+                command_parts = command.split()
+                if command_parts and command_parts[0] in interactive_programs_list:
+                    print_colored("Interactive program detected (force). Launching...", 'YELLOW')
+                    return interactive_programs(command)
+                # Execute non-'cd' commands
+                process = subprocess.Popen(part, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=-1, universal_newlines=True)
+                
+                while True:
+                    stderr_line = ""
+                    stdout_line = process.stdout.readline()
+                    # next line have a problem with:  find ~/Desktop -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' \)
+                    #if (process.stderr.readable()):
+                    #    stderr_line = process.stderr.readline(1024)
+                    if stdout_line:
+                        print(stdout_line.strip())
+                        output.append(stdout_line.strip())
+                    if stderr_line:
+                        print_colored(stderr_line.strip(), 'RED')
+                        output.append(stderr_line.strip())
+                    if not stdout_line and not stderr_line and process.poll() is not None:
+                        break
 
-        # Ensure all remaining output is captured
-        remaining_stdout, remaining_stderr = process.communicate()
-        if remaining_stdout:
-            print(remaining_stdout.strip())
-            output.append(remaining_stdout.strip())
-        if remaining_stderr:
-            print_colored(remaining_stderr.strip(), 'RED')
-            output.append(remaining_stderr.strip())
+                remaining_stdout, remaining_stderr = process.communicate()
+                if remaining_stdout:
+                    print(remaining_stdout.strip())
+                    output.append(remaining_stdout.strip())
+                if remaining_stderr:
+                    print_colored(remaining_stderr.strip(), 'RED')
+                    output.append(remaining_stderr.strip())
 
-        if process.returncode == 0:
-            return "\n".join(output)
-        else:
-            return f"Error: Command exited with status {process.returncode}\n" + "\n".join(output)
+                if process.returncode != 0:
+                    print_colored(f"Error: Command exited with status {process.returncode}", 'RED')
+                    output.append(f"Error: Command exited with status {process.returncode}")
+        return "\n".join(output)
     except Exception as e:
         return f"Error in execution: {str(e)}"
+
+def init_conversation_history ():
+    # Identify the operating system
+    operating_system = platform.system() + " " + platform.release() + " " + platform.version()
+    # Initialize conversation history with OS details
+    conversation_history = [
+        {"role": "system", "content": f"You are a helpful assistant that can execute shell commands and provide information. The operating system is {operating_system}."}
+    ]
+    return conversation_history
+
+def truncate_string(input_string):
+    input_string = str(input_string)
+    # Define the maximum length allowed for the string
+    max_length = 1000
+    
+    # Check if the string needs to be truncated
+    if len(input_string) > max_length:
+        # Truncate the string to the last 1000 characters and add "..." at the beginning
+        return "..." + input_string[-max_length:]
+    else:
+        # Return the string as is if no truncation is needed
+        return input_string
 
 def main():
     # Parse command line arguments
@@ -164,40 +197,36 @@ def main():
     
     client = OpenAI(api_key=api_key)
 
-    # Identify the operating system
-    operating_system = platform.system()
-
+    conversation_history = init_conversation_history()
+    
     # Create a PromptSession with FileHistory
-    session = PromptSession(history=FileHistory('.command_history'))
-
-    # Initialize conversation history with OS details
-    conversation_history = [
-        {"role": "system", "content": f"You are a helpful assistant that can execute shell commands and provide information. The operating system is {operating_system}."}
-    ]
-
-    if not args.forget:
-        conversation_history.append({"role": "system", "content": "You will retain conversation context across interactions."})
+    home_directory = os.path.expanduser('~')
+    history_file_path = os.path.join(home_directory, '.command_history')
+    session = PromptSession(history=FileHistory(history_file_path))
     executed_command = False
     while True:
         try:
             # Use prompt_toolkit to get user input with history
-            user_input = session.prompt(f"\n{os.getcwd()}> ")
+            user_input = session.prompt(f"AIShellBrain:{os.getcwd()}> ")
             if user_input == "":
                 if executed_command:
-                    user_input = "Describe the result using the language I used previously"
+                    user_input = "Describe result using language I used previously"
                 else:
                     continue
 
             if user_input.lower() == 'exit':
                 break
-
+            
+            if user_input.lower() == 'clear' or user_input.lower() == 'cls':
+                print("clear hidtory")
+                conversation_history = init_conversation_history()
             # Add user input to conversation history if --forget is not enabled
             if not args.forget:
                 conversation_history.append({"role": "user", "content": user_input})
 
             # Prepare messages for OpenAI API
             messages = conversation_history if not args.forget else [{"role": "user", "content": user_input}]
-
+            print(messages)
             # Call OpenAI API to get the shell command
             response = client.chat.completions.create(
                 model=args.model,  # Use the model specified by the user
@@ -225,7 +254,7 @@ def main():
                             "properties": {
                                 "command": {
                                     "type": "string",
-                                    "description": "The interactive program command to execute"
+                                    "description": "The interactive program command to execute, such as 'text editors', 'programs with graphical interface', and any other interactive applications that do not produce direct output to the console."
                                 }
                             },
                             "required": ["command"]
@@ -253,7 +282,7 @@ def main():
                 
                 # Ask for confirmation if -y flag is not set
                 if not args.y and not is_dangerous:
-                    confirmation = input(f"Do you want to execute the command: '{command_to_execute}'? (y/n): ")
+                    confirmation = input(f"{COLORS['YELLOW']}Do you want to execute the command:{COLORS['RESET']} '{command_to_execute}'? (y/n): ")
                     if confirmation.lower() != 'y':
                         print_colored("Command execution cancelled.", 'YELLOW')
                         continue
@@ -271,15 +300,14 @@ def main():
 
                 # Add assistant's response and command output to conversation history if --forget is not enabled
                 if not args.forget:
-                    conversation_history.append({"role": "assistant", "content": f"Executed command: {command_to_execute}\nOutput: {output}"})
+                    output_truncated = truncate_string(output)
+                    conversation_history.append({"role": "user", "content": f"return:{output_truncated}"})
             else:
                 executed_command = False
                 # If no function call was made, print the OpenAI response
-                # response.choices[0].message.content
-                print_colored("OpenAI response:", 'LIGHT_CYAN')
                 if hasattr(response, 'choices') and len(response.choices) > 0 and hasattr(response.choices[0].message, 'content'):
                     assistant_response = response.choices[0].message.content
-                    print(markdown_to_ansi(assistant_response))
+                    print_colored(markdown_to_ansi(assistant_response),'LIGHT_YELLOW')
                     if not args.forget:
                         conversation_history.append({"role": "assistant", "content": assistant_response})
                 else:
