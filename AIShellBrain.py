@@ -175,15 +175,16 @@ def init_conversation_history (args):
 def truncate_string(input_string):
     input_string = str(input_string)
     # Define the maximum length allowed for the string
-    max_length = 1000
+    max_length = 2000
     
     # Check if the string needs to be truncated
     if len(input_string) > max_length:
-        # Truncate the string to the last 1000 characters and add "..." at the beginning
-        return "..." + input_string[-max_length:]
+        # Truncate the string to the first 2000 characters and add "..." at the end
+        return input_string[:max_length] + "(TRUNCATED)"
     else:
         # Return the string as is if no truncation is needed
         return input_string
+
 
 def read_instruction_file(file_path):
     # Check if the file exists; if not, create it
