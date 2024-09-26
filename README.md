@@ -12,7 +12,10 @@ This Python script provides an AI-powered interactive shell that integrates with
 - Command history support.
 - OpenAI API key management via command line or environment variable.
 - Option to specify a different GPT model.
-- Explanation of the last output by pressing the enter key
+- Explanation of the last output by pressing the enter key.
+- Read additional instructions from a specified file.
+- Automatically create the instruction file if it does not exist.
+- Use a default instruction file `AIShellBrain.md` in the user's home directory if no file is specified.
 
 ## Requirements
 
@@ -51,10 +54,11 @@ python AIShellBrain.py [options]
 ### Command-line Options
 
 - `--forget`: Do not maintain conversation context across multiple interactions.
-- `--y`: Execute commands without confirmation except for "rm", "del" etc
+- `-y`: Execute commands without confirmation except for "rm", "del" etc.
 - `--yy`: Execute commands without confirmation.
 - `--api-key KEY`: Specify the OpenAI API key (alternative to environment variable).
 - `--model MODEL_NAME`: Force the use of a different GPT model instead of the default "gpt-4o-mini".
+- `--instructionfile [FILE_PATH]`: Path to a file with additional instructions for the assistant. If the file does not exist, it will be created. If the flag is present but no file is specified, the default `AIShellBrain.md` in the user's home directory is used.
 
 ### Examples
 
@@ -78,9 +82,19 @@ python AIShellBrain.py [options]
    python AIShellBrain.py --api-key YOUR_API_KEY
    ```
 
-5. Use a different GPT model:
+5. Use a different GPT model, default is gpt-4o-mini:
    ```
    python AIShellBrain.py --model gpt-3.5-turbo
+   ```
+
+6. Use a specific instruction file:
+   ```
+   python AIShellBrain.py --instructionfile /path/to/instructionfile.md
+   ```
+
+7. Use the default instruction file `AIShellBrain.md` in the user's home directory:
+   ```
+   python AIShellBrain.py --instructionfile
    ```
 
 ## How It Works

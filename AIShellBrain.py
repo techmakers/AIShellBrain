@@ -1,6 +1,7 @@
 # This script was created by Alessandro Vernassa
 # It provides an interactive interface to communicate with an AI model
 # using the OpenAI API.
+# puoi monitorare l'uso della cpu ogni 5 minuti per un ora?
 
 from openai import OpenAI
 import subprocess
@@ -100,10 +101,8 @@ def execute_shell_command(command):
         # Split the command by '&&' to handle multiple commands
         command_parts = command.split('&&')
         output = []
-
         for part in command_parts:
             part = part.strip()  # Remove any leading/trailing whitespace
-
             if part.startswith('cd'):
                 # Handle 'cd' command separately
                 new_dir = part[3:].strip()
@@ -157,13 +156,20 @@ def execute_shell_command(command):
     except Exception as e:
         return f"Error in execution: {str(e)}"
 
-def init_conversation_history ():
+def init_conversation_history (args):
     # Identify the operating system
     operating_system = platform.system() + " " + platform.release() + " " + platform.version()
     # Initialize conversation history with OS details
     conversation_history = [
         {"role": "system", "content": f"You are a helpful assistant that can execute shell commands and provide information. The operating system is {operating_system}."}
     ]
+    # Handle instruction file if provided
+    if args.instructionfile:
+        instruction_file_path = args.instructionfile
+        instructions = read_instruction_file(instruction_file_path)
+        if instructions:
+            conversation_history.append({"role": "system", "content": instructions})
+
     return conversation_history
 
 def truncate_string(input_string):
@@ -179,6 +185,23 @@ def truncate_string(input_string):
         # Return the string as is if no truncation is needed
         return input_string
 
+def read_instruction_file(file_path):
+    # Check if the file exists; if not, create it
+    if not os.path.exists(file_path):
+        with open(file_path, 'w') as file:
+            file.write("")
+        print_colored(f"Instruction file created: {file_path}", 'GREEN')
+    
+    # Read the content of the file
+    with open(file_path, 'r') as file:
+        instructions = file.read()
+    
+    # If the file is empty, provide default instructions
+    if not instructions:
+        instructions = ""
+    
+    return instructions
+
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Interactive shell with OpenAI integration")
@@ -187,6 +210,7 @@ def main():
     parser.add_argument("--yy", action="store_true", help="Execute even dangerous commands without confirmation")
     parser.add_argument("--api-key", help="OpenAI API key")
     parser.add_argument("--model", default="gpt-4o-mini", help="Specify a different OpenAI model to use (default: gpt-4o-mini)")
+    parser.add_argument("--instructionfile", nargs='?', const=os.path.join(os.path.expanduser('~'), 'AIShellBrain.md'), help="Path to a file with additional instructions for the assistant")
     args = parser.parse_args()
 
     # Get the OpenAI API key
@@ -197,7 +221,8 @@ def main():
     
     client = OpenAI(api_key=api_key)
 
-    conversation_history = init_conversation_history()
+    conversation_history = init_conversation_history(args)
+
     
     # Create a PromptSession with FileHistory
     home_directory = os.path.expanduser('~')
@@ -218,8 +243,8 @@ def main():
                 break
             
             if user_input.lower() == 'clear' or user_input.lower() == 'cls':
-                print("clear hidtory")
-                conversation_history = init_conversation_history()
+                print("clear history")
+                conversation_history = init_conversation_history(args)
             # Add user input to conversation history if --forget is not enabled
             if not args.forget:
                 conversation_history.append({"role": "user", "content": user_input})
