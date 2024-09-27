@@ -121,4 +121,4 @@ See LICENCE.txt
 
 ## Author
 
-Alessandro Vernassa
+Techmakers srl - Alessandro Vernassa
