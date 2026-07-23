@@ -1,17 +1,9 @@
 @echo off
+setlocal
 
-:: Colors for output
-set "GREEN="
-set "RED="
-set "NC="
+cd /d "%~dp0"
 
-:: Function to check and install a pip package
-:install_pip_package
-echo Installing %1 via pip...
-pip install %1
-goto :eof
-
-:: Check if Python 3 is installed
+:: Check if Python is installed
 where /q python
 if %errorlevel% neq 0 (
     echo Python 3 not found. Please install Python 3 and add it to your PATH.
@@ -26,18 +18,18 @@ if %errorlevel% neq 0 (
     python -m pip install --upgrade pip
 )
 
-:: List of pip dependencies
-set dependencies=openai prompt_toolkit
+:: Install Python dependencies
+echo Installing dependencies from requirements.txt...
+python -m pip install -r requirements.txt
 
-:: Check and install pip dependencies
-for %%d in (%dependencies%) do (
-    pip show %%d >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo %%d not found. Installing...
-        call :install_pip_package %%d
+:: Create .env from the example on first run
+if not exist .env (
+    if exist .env.example (
+        echo Creating .env from .env.example. Edit it to set your provider/API key.
+        copy .env.example .env >nul
     )
 )
 
-:: Run the Python script
-echo Starting AIShellBrain.py...
-python AIShellBrain.py -y
+:: Run ShellBrain
+echo Starting ShellBrain...
+python shellbrain.py %*

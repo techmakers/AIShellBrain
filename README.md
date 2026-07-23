@@ -1,124 +1,159 @@
-# AI-Powered Interactive Shell
+# ShellBrain — AI-Powered Interactive Shell
 
-This Python script provides an AI-powered interactive shell that integrates with OpenAI's GPT models to execute shell commands and provide information.
+ShellBrain is a single-file Python assistant that turns natural language into
+shell commands and runs them for you. It works with any OpenAI-compatible
+backend, so you can use the OpenAI cloud API **or** a fully local model.
+
+**Supported backends:**
+
+| Provider   | What it is                                    | Default endpoint              |
+|------------|-----------------------------------------------|-------------------------------|
+| `openai`   | OpenAI cloud API                              | `api.openai.com`              |
+| `llamacpp` | Local `llama-server` (llama.cpp)              | `http://localhost:8080/v1`    |
+| `ollama`   | Local Ollama (OpenAI-compatible endpoint)     | `http://localhost:11434/v1`   |
+
+All connection details (provider, base URL, API key, model) live in a `.env`
+file, and can be overridden on the command line.
 
 ## Features
 
-- Execute shell commands using natural language input.
-- Maintain conversation context across multiple interactions unless specified otherwise.
-- Change directories and persist the change for subsequent commands.
-- Confirm command execution for added safety.
-- Colorized output for better readability.
-- Command history support.
-- OpenAI API key management via command line or environment variable.
-- Option to specify a different GPT model.
-- Explanation of the last output by pressing the enter key.
-- Read additional instructions from a specified file.
-- Automatically create the instruction file if it does not exist.
-- Use a default instruction file `AIShellBrain.md` in the user's home directory if no file is specified.
+- Execute shell commands from natural language input.
+- Works with OpenAI, llama.cpp, or Ollama — switch with a single setting.
+- Modern tool-calling: the model requests commands via the standard tools API.
+- Responses stream to the terminal token by token, with markdown rendered to
+  ANSI (bold, italics, headers, colored lists).
+- On-demand explanations: by default a command's output is shown but not sent to
+  the model; press Enter to have it explained. `--auto-explain` restores the
+  automatic agentic loop (model reads output and can chain more commands).
+- Configuration via `.env` (git-ignored) — no secrets in code or shell history.
+- Conversation context kept across turns (disable with `--forget`).
+- `cd` persists across commands.
+- Confirmation prompts before running commands, with extra protection for
+  dangerous ones (`rm`, `dd`, `mkfs`, `shutdown`, …).
+- Interactive programs (`nano`, `vim`, `htop`, `less`, …) launched directly.
+- Colorized output and command history.
+- Standing instructions file: `~/AIShellBrain.md` is loaded automatically (if it
+  exists) and its rules/facts are applied to every request.
 
 ## Requirements
 
-- Python 3.6+
-- OpenAI Python library
-- prompt_toolkit library
+- Python 3.8+
+- Packages in `requirements.txt`: `openai`, `prompt_toolkit`, `python-dotenv`
 
 ## Installation
 
 1. Clone this repository:
-   ```
+   ```bash
    git clone https://github.com/techmakers/AIShellBrain.git
    cd AIShellBrain
    ```
 
-2. Install the required packages:
-   ```
-   pip install openai prompt_toolkit
+2. Install the dependencies:
+   ```bash
+   pip install -r requirements.txt
    ```
 
-3. Set up your OpenAI API key (choose one method):
-   - Set an environment variable:
-     ```
-     export OPENAI_API_KEY='your-api-key-here'
-     ```
-   - Or, prepare to pass it as a command-line argument when running the script
+3. Create your configuration:
+   ```bash
+   cp .env.example .env
+   ```
+   Then edit `.env` — pick a provider and fill in the relevant values (see below).
+
+## Configuration (`.env`)
+
+Copy `.env.example` to `.env` and edit it. Key settings:
+
+```ini
+# Which backend to use: openai | llamacpp | ollama
+SHELLBRAIN_PROVIDER=llamacpp
+
+# OpenAI cloud
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
+
+# llama.cpp server
+LLAMACPP_BASE_URL=http://localhost:8080/v1
+LLAMACPP_API_KEY=EMPTY
+LLAMACPP_MODEL=local-model
+
+# Ollama
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_API_KEY=ollama
+OLLAMA_MODEL=llama3.1:latest
+```
+
+**Value precedence** for each setting (highest wins):
+CLI argument → provider-specific env var (e.g. `OLLAMA_MODEL`) →
+generic env var (`SHELLBRAIN_MODEL`) → built-in default.
 
 ## Usage
 
-Run the script with:
-
+```bash
+python shellbrain.py [options]
 ```
-python AIShellBrain.py [options]
+
+Everything is read from `.env` by default. Override any value on the command line:
+
+```bash
+# Use whatever is configured in .env
+python shellbrain.py
+
+# Force a specific backend / model
+python shellbrain.py --provider ollama --model llama3.1:latest
+python shellbrain.py --provider llamacpp --model qwen3-vl
+python shellbrain.py --provider openai --model gpt-4o-mini --api-key sk-...
 ```
 
 ### Command-line Options
 
-- `--forget`: Do not maintain conversation context across multiple interactions.
-- `-y`: Execute commands without confirmation except for "rm", "del" etc.
-- `--yy`: Execute commands without confirmation.
-- `--api-key KEY`: Specify the OpenAI API key (alternative to environment variable).
-- `--model MODEL_NAME`: Force the use of a different GPT model instead of the default "gpt-4o-mini".
-- `--instructionfile [FILE_PATH]`: Path to a file with additional instructions for the assistant. If the file does not exist, it will be created. If the flag is present but no file is specified, the default `AIShellBrain.md` in the user's home directory is used.
+- `--provider {openai,llamacpp,ollama}`: Backend to use (overrides `SHELLBRAIN_PROVIDER`).
+- `--model MODEL`: Model name (overrides the `.env` model).
+- `--base-url URL`: OpenAI-compatible base URL (overrides `.env`).
+- `--api-key KEY`: API key (overrides `.env`).
+- `--forget`: Do not keep conversation context between inputs.
+- `--auto-explain`: Automatically send each command's output back to the model
+  so it explains and chains results. By default the output is only sent when you
+  press Enter on an empty line right after the command.
+- `-y`: Execute non-dangerous commands without confirmation.
+- `--yy`: Execute even dangerous commands without confirmation.
+- `--instructionfile [FILE]`: Path to a file with standing instructions for the
+  assistant (created if missing). When the flag is omitted, `~/AIShellBrain.md`
+  is loaded automatically if it exists.
 
-### Examples
+### Quick start scripts
 
-1. Run maintaining conversation context with command confirmation:
-   ```
-   python AIShellBrain.py
-   ```
-
-2. Run without conversation context and with command confirmation:
-   ```
-   python AIShellBrain.py --forget
-   ```
-
-3. Run without command confirmation:
-   ```
-   python AIShellBrain.py --y
-   ```
-
-4. Specify API key via command line:
-   ```
-   python AIShellBrain.py --api-key YOUR_API_KEY
-   ```
-
-5. Use a different GPT model, default is gpt-4o-mini:
-   ```
-   python AIShellBrain.py --model gpt-3.5-turbo
-   ```
-
-6. Use a specific instruction file:
-   ```
-   python AIShellBrain.py --instructionfile /path/to/instructionfile.md
-   ```
-
-7. Use the default instruction file `AIShellBrain.md` in the user's home directory:
-   ```
-   python AIShellBrain.py --instructionfile
-   ```
+- Linux/macOS: `./start_AIShellBrain.sh` (installs deps, creates `.env`, then runs)
+- Windows: `start_AIShellBrain.bat`
 
 ## How It Works
 
-1. The script prompts for user input.
-2. The input is sent to OpenAI's API to generate a shell command or provide information.
-3. If a command is generated, the user is asked for confirmation (unless `--yy` is used).
-4. The command is executed, and the output is displayed.
-5. The process repeats until the user exits.
+1. You type a request in natural language.
+2. ShellBrain sends it, with the available tools, to the configured model.
+3. If the model requests a command, you're asked to confirm (unless `-y`/`--yy`).
+4. The command runs and its output is streamed to your terminal.
+5. By default the output is **not** sent back to the model. Press Enter on an
+   empty line to send it and get an explanation. (With `--auto-explain` the
+   output is sent automatically and the model can chain further commands.)
+6. Repeat until you type `exit`.
+
+This on-demand explanation avoids an extra model round-trip (and its token cost)
+for the many commands whose output you just want to see.
+
+Special inputs: `clear`/`cls` resets the conversation, an empty line right after
+a command asks the model to explain its output, `exit` quits.
 
 ## Safety and Permissions
 
-- The script runs commands with the same permissions as the user running the script.
-- Always review commands before confirming execution.
-- Use the `--yy` option with caution, as it bypasses command confirmation.
-
-## Contributing
-
-Contributions, issues, and feature requests are welcome. Feel free to check the [issues page](https://github.com/techmakers/AIShellBrain/issues) if you want to contribute.
+- Commands run with the same permissions as the user running ShellBrain.
+- Always review commands before confirming.
+- `-y` skips confirmation for ordinary commands; dangerous ones still prompt.
+- `--yy` skips **all** confirmations — use with caution.
+- Command output sent back to the model is truncated to keep prompts small.
 
 ## License
 
-See LICENCE.txt
+See LICENCE.txt (MIT).
 
 ## Author
 
-Techmakers srl - Alessandro Vernassa
+Techmakers srl — Alessandro Vernassa

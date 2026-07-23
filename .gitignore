@@ -1,2 +1,6 @@
 .command_history
+.shellbrain_history
 test.py
+.env
+__pycache__/
+*.pyc
